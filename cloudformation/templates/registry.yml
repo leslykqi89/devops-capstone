@@ -1,0 +1,69 @@
+Description: >
+  Lesly Quiñonez 
+  This template is used to create a registry in AWS
+
+Parameters:
+  EnvironmentName:
+    Description: The environment name
+    Type: String
+  EnvironmentId:
+    Description: The environment id
+    Type: String
+  RepositoryName:
+    Description: Registry Name
+    Type: String
+
+Resources:
+  CIGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: CIGroup
+      Path: /
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess"
+        - "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
+        - "arn:aws:iam::aws:policy/AmazonEKSServicePolicy"
+        - "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+        - "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+
+  JenkinsIAM:
+    Type: AWS::IAM::User
+    Properties:
+      Path: /
+      
+  UserMembership:
+    Type: AWS::IAM::UserToGroupAddition
+    Properties:
+      GroupName: !Ref CIGroup
+      Users:
+        - !Ref JenkinsIAM
+
+  DockerRegistry:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref RepositoryName
+      RepositoryPolicyText:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Sid: AllowPushPull
+            Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt JenkinsIAM.Arn
+            Action:
+              - "ecr:GetDownloadUrlForLayer"
+              - "ecr:BatchGetImage"
+              - "ecr:BatchCheckLayerAvailability"
+              - "ecr:PutImage"
+              - "ecr:InitiateLayerUpload"
+              - "ecr:UploadLayerPart"
+              - "ecr:CompleteLayerUpload"
+
+Outputs:
+  RegistryURI:
+    Description: Registry URI
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${RepositoryName}"
+    Export:
+      Name: !Sub ${EnvironmentId}-REG-URI
+

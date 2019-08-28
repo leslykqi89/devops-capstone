@@ -1,0 +1,53 @@
+Description: >
+  Lesly Quiñonez 
+  This template is used to setup Kubernetes in AWS.
+
+Parameters:
+  EnvironmentName:
+    Description: the environment name
+    Type: String
+  EnvironmentId:
+    Description: the environment id
+    Type: String
+
+Resources:
+  K8SClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          Effect: Allow
+          Principal: 
+            Service:
+              - eks.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+
+  K8SSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Group used for the cluster and the worker nodes
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${EnvironmentId}-VPC"
+
+  K8SCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: prod
+      Version: '1.11'
+      RoleArn: !GetAtt K8SClusterRole.Arn
+      ResourcesVpcConfig:
+        SecurityGroupIds:
+          - !Ref K8SSecurityGroup
+        SubnetIds:
+          Fn::Split:
+            - ","
+            - Fn::ImportValue:
+                !Sub "${EnvironmentId}-PUB-NET"
+
+Outputs:
+  

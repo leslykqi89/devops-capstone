@@ -1,0 +1,14 @@
+[
+    {
+        "ParameterKey": "EnvironmentName",
+        "ParameterValue": "Project Capstone"
+    },
+    {
+        "ParameterKey": "EnvironmentId",
+        "ParameterValue": "capstone"
+    },
+    {
+        "ParameterKey": "RepositoryName",
+        "ParameterValue": "registry-p7"
+    }
+]

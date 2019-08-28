@@ -1,0 +1,155 @@
+Description: >
+  Lesly Quiñonez 
+  This template is used to create the network used in this project.
+
+Parameters:
+  EnvironmentName:
+    Description: the environment name
+    Type: String
+  EnvironmentId:
+    Description: the environment id
+    Type: String
+  VpcCIDR:
+    Description: CIDR used for the VPC.
+    Type: String
+    Default: 10.0.0.0/16
+  PublicSubnet1CIDR:
+    Description: CIDR used for the public subnet (AZ1)
+    Type: String 
+  PublicSubnet2CIDR:
+    Description: CIDR used for the public subnet (AZ2)
+    Type: String 
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} - VPC
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} - Internet Gateway
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} - Public Subnet (AZ1)
+        - Key: SubnetType
+          Value: Public
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} - Public Subnet (AZ2)
+        - Key: SubnetType
+          Value: Public
+
+  NatEIP1:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  NatEIP2:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      AllocationId: !GetAtt NatEIP1.AllocationId
+      SubnetId: !Ref PublicSubnet1
+
+  NatGateway2:
+    Type: AWS::EC2::NatGateway
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      AllocationId: !GetAtt NatEIP2.AllocationId
+      SubnetId: !Ref PublicSubnet2
+  
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} - Public Route Table
+        - Key: Network
+          Value: Public
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+Outputs:
+  VPC:
+    Description: Reference to the VPC
+    Value: !Ref VPC
+    Export:
+      Name: !Sub ${EnvironmentId}-VPCID
+
+  VPCPublicRouteTable:
+    Description: Reference to the Public Route Table
+    Value: !Ref PublicRouteTable
+    Export:
+      Name: !Sub ${EnvironmentId}-PUB-RT
+
+  PublicSubnets:
+    Description: List of all the public subnets
+    Value: !Join [",", [!Ref PublicSubnet1, !Ref PublicSubnet2]]
+    Export:
+      Name: !Sub ${EnvironmentId}-PUB-NET
+
+  PublicSubnet:
+    Description: Reference to the Public Subnet
+    Value: !Ref PublicSubnet1
+    Export: 
+      Name: !Sub ${EnvironmentId}-PUB1-SN
+
+  PublicSubnet:
+    Description: Reference to the Public Subnet
+    Value: !Ref PublicSubnet2
+    Export: 
+      Name: !Sub ${EnvironmentId}-PUB2-SN

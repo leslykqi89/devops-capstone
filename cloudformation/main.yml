@@ -1,0 +1,22 @@
+Description: >
+  Lesly Quiñonez 
+  This template is used to create the whole AWS stack for the project 7.
+
+Parameters:
+  EnvironmentName:
+    Description: An environment name
+    Type: String
+  RepositoryName:
+    Description: Registry Name
+    Type: String
+
+Resources:
+  Registry:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        EnvironmentName:
+          !Ref EnvironmentName
+        RepositoryName:
+          !Ref RepositoryName
+    TemplateURL: https://lquinonez-proj7-templates.s3.amazonaws.com/templates/registry.yml

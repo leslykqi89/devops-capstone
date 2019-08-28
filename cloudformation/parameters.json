@@ -1,0 +1,10 @@
+[
+    {
+        "ParameterKey": "EnvironmentName",
+        "ParameterValue": "Project 7"
+    },
+    {
+        "ParameterKey": "RepositoryName",
+        "ParameterValue": "registryP7"
+    }
+]
