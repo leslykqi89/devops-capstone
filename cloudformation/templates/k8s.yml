@@ -50,4 +50,8 @@ Resources:
                 !Sub "${EnvironmentId}-PUB-NET"
 
 Outputs:
-  
+  K8SClusterEndpoint:
+    Value: !GetAtt K8SCluster.Endpoint
+    Description: Cluster Endpoint
+    Export:
+      Name: !Sub "${EnvironmentId}-CLUSTER"
