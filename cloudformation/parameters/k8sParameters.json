@@ -1,0 +1,22 @@
+[
+    {
+        "ParameterKey": "EnvironmentName",
+        "ParameterValue": "Project Capstone"
+    },
+    {
+        "ParameterKey": "EnvironmentId",
+        "ParameterValue": "capstone"
+    },
+    {
+        "ParameterKey": "EC2KeyName",
+        "ParameterValue": "MyVPCKP"
+    },
+    {
+        "ParameterKey": "ClusterName",
+        "ParameterValue": "eks-cluster"
+    },
+    {
+        "ParameterKey": "BootstrapArguments",
+        "ParameterValue": "--kubelet-extra-args --node-labels=nodesgroup=main,subnets=private"
+    }
+]

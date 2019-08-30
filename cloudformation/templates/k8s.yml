@@ -9,6 +9,19 @@ Parameters:
   EnvironmentId:
     Description: the environment id
     Type: String
+  NodeImageId:
+    Description: Image used for Worker Nodes.
+    Type: AWS::EC2::Image::Id
+    Default: ami-0c5b63ec54dd3fc38
+  EC2KeyName:
+    Description: Name of the EC2 KeyPair used by the Node instances.
+    Type: AWS::EC2::KeyPair::KeyName
+  ClusterName:
+    Description: Name of the cluster
+    Type: String
+  BootstrapArguments:
+    Description: List of Bootstrap arguments
+    Type: String
 
 Resources:
   K8SClusterRole:
@@ -22,32 +35,161 @@ Resources:
             Service:
               - eks.amazonaws.com
           Action: sts:AssumeRole
+      Path: '/'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
         - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
 
-  K8SSecurityGroup:
+  K8SClusterControlPlaneSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Group used for the cluster and the worker nodes
       VpcId:
         Fn::ImportValue:
-          !Sub "${EnvironmentId}-VPC"
+          !Sub "${EnvironmentId}-VPCID"
 
   K8SCluster:
     Type: AWS::EKS::Cluster
     Properties:
-      Name: prod
-      Version: '1.11'
+      Name: !Ref ClusterName
+      Version: '1.13'
       RoleArn: !GetAtt K8SClusterRole.Arn
       ResourcesVpcConfig:
         SecurityGroupIds:
-          - !Ref K8SSecurityGroup
+          - !Ref K8SClusterControlPlaneSecurityGroup
         SubnetIds:
           Fn::Split:
             - ","
             - Fn::ImportValue:
                 !Sub "${EnvironmentId}-PUB-NET"
+
+  K8SNodeWorkerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: '/'
+      ManagedPolicyArns: 
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+
+  K8SNodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: '/'
+      Roles:
+        - !Ref K8SNodeWorkerRole
+
+  K8SNodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: !Sub ${EnvironmentName} - Worker Node Security Group
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${EnvironmentId}-VPCID"
+      Tags:
+        - Key: !Sub "kubernetes.io/cluster/${ClusterName}"
+          Value: 'owned'
+
+  K8SNodeSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    DependsOn: K8SNodeSecurityGroup
+    Properties:
+      Description: Allows communication between nodes
+      GroupId: !Ref K8SNodeSecurityGroup
+      SourceSecurityGroupId: !Ref K8SNodeSecurityGroup
+      IpProtocol: '-1'
+      FromPort: 0
+      ToPort: 65535
+
+  K8SNodeSecurityGroupControlPlaneIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    DependsOn: K8SNodeSecurityGroup
+    Properties:
+      Description: Allows commjnication between worker Kubelets and the cluster
+      GroupId: !Ref K8SNodeSecurityGroup
+      SourceSecurityGroupId: !Ref K8SClusterControlPlaneSecurityGroup
+      IpProtocol: tcp
+      FromPort: 1025
+      ToPort: 65535
+
+  K8SControlPlaneToNodeSecurityGroupEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    DependsOn: K8SNodeSecurityGroup
+    Properties:
+      Description: Allows cluster to communicate with workers and pods
+      GroupId: !Ref K8SClusterControlPlaneSecurityGroup
+      SourceSecurityGroupId: !Ref K8SNodeSecurityGroup
+      IpProtocol: tcp
+      FromPort: 1025
+      ToPort: 65535
+
+  K8SClusterControlPlaneSecurityGroupClusterIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    DependsOn: K8SNodeSecurityGroup
+    Properties:
+      Description: Allows pods to communicate to the cluster API
+      GroupId: !Ref K8SClusterControlPlaneSecurityGroup
+      SourceSecurityGroupId: !Ref K8SNodeSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+
+  K8SNodesLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    DependsOn: K8SCluster
+    Properties:
+      IamInstanceProfile: !Ref K8SNodeInstanceProfile
+      ImageId: !Ref NodeImageId
+      InstanceType: t2.micro
+      KeyName: !Ref EC2KeyName
+      SecurityGroups:
+        - !Ref K8SNodeSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -o xtrace
+            /etc/eks/bootstrap.sh ${ClusterName} ${BootstrapArguments}
+            /opt/aws/bin/cfn-signal --exit-code $? \
+              --stack  ${AWS::StackName} \
+              --resource NodeGroup  \
+              --region ${AWS::Region}
+      
+
+  K8SNodes:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    DependsOn: K8SCluster
+    Properties:
+      Cooldown: 60
+      HealthCheckGracePeriod: 120
+      HealthCheckType: EC2
+      LaunchConfigurationName: !Ref K8SNodesLaunchConfiguration
+      MaxSize: 4
+      MinSize: 2
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} - K8S Nodes AutoScaling
+          PropagateAtLaunch: true
+        - Key: !Sub 'kubernetes.io/cluster/${ClusterName}'
+          Value: 'owned'
+          PropagateAtLaunch: 'true'
+      VPCZoneIdentifier:
+        Fn::Split:
+          - ","
+          - Fn::ImportValue:
+              !Sub "${EnvironmentId}-PUB-NET"
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: 1
+        MaxBatchSize: 1
 
 Outputs:
   K8SClusterEndpoint:

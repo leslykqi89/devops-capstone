@@ -20,3 +20,23 @@ Resources:
         RepositoryName:
           !Ref RepositoryName
     TemplateURL: https://lquinonez-proj7-templates.s3.amazonaws.com/templates/registry.yml
+
+  Networking:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        EnvironmentName:
+          !Ref EnvironmentName
+        RepositoryName:
+          !Ref RepositoryName
+    TemplateURL: https://lquinonez-proj7-templates.s3.amazonaws.com/templates/networking.yml
+
+  Kubernetes:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        EnvironmentName:
+          !Ref EnvironmentName
+        RepositoryName:
+          !Ref RepositoryName
+    TemplateURL: https://lquinonez-proj7-templates.s3.amazonaws.com/templates/k8s.yml
