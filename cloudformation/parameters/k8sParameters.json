@@ -18,5 +18,9 @@
     {
         "ParameterKey": "BootstrapArguments",
         "ParameterValue": "--kubelet-extra-args --node-labels=nodesgroup=main,subnets=private"
+    },
+    {
+        "ParameterKey": "NodeImageId",
+        "ParameterValue": "ami-0d3998d69ebe9b214"
     }
 ]
