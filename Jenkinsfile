@@ -13,8 +13,10 @@ pipeline {
     }
     stage('Push Image') {
       steps {
-        sh 'echo hola'
-        dockerNode(image: 'registry-p7')
+        withAWS(credentials: 'udacity', region: 'us-east-1') {
+          sh 'make push'
+        }
+
       }
     }
     stage('Upgrade docker image') {
