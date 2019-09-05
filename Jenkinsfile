@@ -11,20 +11,21 @@ pipeline {
         sh 'make build'
       }
     }
-    stage('Push Image') {
+    stage('Login to ECR') {
       steps {
         withAWS(credentials: 'udacity', region: 'us-east-1') {
           script {
             def login = ecrLogin()
             sh "${login}"
           }
+
         }
 
       }
     }
-    stage('Upgrade docker image') {
+    stage('Push image') {
       steps {
-        sh 'kubectl apply -f kubernetes/cluster.yml'
+        sh 'docker push 925348302516.dkr.ecr.us-east-1.amazonaws.com/registry-p7'
       }
     }
   }
