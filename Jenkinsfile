@@ -32,7 +32,7 @@ docker tag registry-p7:latest 925348302516.dkr.ecr.us-east-1.amazonaws.com/regis
     stage('Upgrade Kubernetes') {
       steps {
         withAWS(credentials: 'udacity', region: 'us-east-1') {
-          sh 'aws eks --region us-east-1 update-kubeconfig --name eks-cluster'
+          sh 'aws --version'
         }
 
       }
