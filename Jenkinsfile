@@ -13,9 +13,7 @@ pipeline {
     }
     stage('Push Image') {
       steps {
-        docker.withRegistry('https://925348302516.dkr.ecr.us-east-1.amazonaws.com', 'ecr:us-east-1:udacity') {
-          docker.image('registry-p7').push('latest')
-        }
+        sh 'echo hola'
       }
     }
     stage('Upgrade docker image') {
