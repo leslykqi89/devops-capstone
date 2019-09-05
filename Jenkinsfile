@@ -31,7 +31,10 @@ docker tag registry-p7:latest 925348302516.dkr.ecr.us-east-1.amazonaws.com/regis
     }
     stage('Upgrade Kubernetes') {
       steps {
-        sh 'kubectl get svc'
+        withAWS(credentials: 'udacity', region: 'us-east-1') {
+          sh 'kubectl get pods'
+        }
+
       }
     }
   }
