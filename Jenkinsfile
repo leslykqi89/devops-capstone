@@ -14,6 +14,7 @@ pipeline {
     stage('Push Image') {
       steps {
         sh 'echo hola'
+        dockerNode(image: 'registry-p7')
       }
     }
     stage('Upgrade docker image') {
