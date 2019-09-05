@@ -31,8 +31,7 @@ docker tag registry-p7:latest 925348302516.dkr.ecr.us-east-1.amazonaws.com/regis
     }
     stage('Rolling Update') {
       steps {
-        sh '''pip install --upgrade awscli
-kubectl get pods'''
+        sh 'kubectl get pods'
       }
     }
   }
