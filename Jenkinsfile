@@ -9,7 +9,7 @@ pipeline {
     stage('Build image') {
       steps {
         sh '''docker build -t registry-p7 ./images
-docker tag registry-p7:latest 925348302516.dkr.ecr.us-east-1.amazonaws.com/registry-p7:1.0.${${BUILD_NUMBER}'''
+docker tag registry-p7:latest 925348302516.dkr.ecr.us-east-1.amazonaws.com/registry-p7:1.0.${BUILD_NUMBER}'''
       }
     }
     stage('Login to ECR') {
