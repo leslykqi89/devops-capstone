@@ -31,7 +31,10 @@ docker tag registry-p7:latest 925348302516.dkr.ecr.us-east-1.amazonaws.com/regis
     }
     stage('Rolling Update') {
       steps {
-        sh 'kubectl get pods'
+        withAWS(credentials: 'udacity', region: 'us-east-1') {
+          sh 'kubectl get pods'
+        }
+
       }
     }
   }
