@@ -8,7 +8,8 @@ pipeline {
     }
     stage('Build image') {
       steps {
-        sh 'make build'
+        sh '''docker build -t ${DOCKER_IMAGE} ./images
+docker tag ${DOCKER_IMAGE}:1.0.${currentBuild.id} 925348302516.dkr.ecr.us-east-1.amazonaws.com/registry-p7:1.0.${currentBuild.id}'''
       }
     }
     stage('Login to ECR') {
@@ -25,7 +26,7 @@ pipeline {
     }
     stage('Push image') {
       steps {
-        sh 'docker push 925348302516.dkr.ecr.us-east-1.amazonaws.com/registry-p7'
+        sh 'docker push 925348302516.dkr.ecr.us-east-1.amazonaws.com/registry-p7:1.0.${currentBuild.id}'
       }
     }
   }
