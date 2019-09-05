@@ -32,7 +32,7 @@ docker tag registry-p7:latest 925348302516.dkr.ecr.us-east-1.amazonaws.com/regis
     stage('Rolling Update') {
       steps {
         withAWS(credentials: 'udacity', region: 'us-east-1') {
-          sh 'kubectl get pods'
+          sh 'kubectl set image deployment/apache-deployment apache-deployment=925348302516.dkr.ecr.us-east-1.amazonaws.com/registry-p7:1.0.${BUILD_NUMBER}'
         }
 
       }
