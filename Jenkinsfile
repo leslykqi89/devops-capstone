@@ -29,7 +29,7 @@ docker tag registry-p7:latest 925348302516.dkr.ecr.us-east-1.amazonaws.com/regis
         sh 'docker push 925348302516.dkr.ecr.us-east-1.amazonaws.com/registry-p7:1.0.${BUILD_NUMBER}'
       }
     }
-    stage('Upgrade Kubernetes') {
+    stage('Rolling Update') {
       steps {
         sh 'kubectl get pods'
       }
