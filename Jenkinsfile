@@ -26,7 +26,7 @@ docker tag registry-p7:latest 925348302516.dkr.ecr.us-east-1.amazonaws.com/regis
     }
     stage('Push image') {
       steps {
-        sh 'docker push 925348302516.dkr.ecr.us-east-1.amazonaws.com/registry-p7:1.0.${${BUILD_NUMBER}}'
+        sh 'docker push 925348302516.dkr.ecr.us-east-1.amazonaws.com/registry-p7:1.0.${BUILD_NUMBER}'
       }
     }
   }
